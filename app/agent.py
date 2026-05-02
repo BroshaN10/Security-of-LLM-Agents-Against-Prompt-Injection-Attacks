@@ -2,9 +2,10 @@ import requests
 import json
 import re
 
-from app.config import MODELS, OLLAMA_URL
+from app.config import MODELS, OLLAMA_URL, ENABLE_INTENT_CLASSIFIER
 from app.tools import TOOLS
 from app.security import verify_tool_call
+from app.classifier import is_malicious
 
 # =========================
 # SYSTEM PROMPT
@@ -63,6 +64,14 @@ def clean_json(raw):
 # MAIN PIPELINE
 # =========================
 def process_query(user_input, role="user", model="llama3"):
+
+    # =========================
+    # LAYER 1: INTENT CLASSIFIER
+    # =========================
+    if ENABLE_INTENT_CLASSIFIER:
+        if is_malicious(user_input, model=model):
+            return {"status": "blocked", "reason": "Intent classifier detected malicious input"}
+
     prompt = SYSTEM_PROMPT + f"\nUser: {user_input}"
 
     raw = call_llm(prompt, model)

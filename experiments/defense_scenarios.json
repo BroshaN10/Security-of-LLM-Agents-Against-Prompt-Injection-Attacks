@@ -1,0 +1,77 @@
+{
+  "description": "Defense toggle scenario definitions for the helpdesk evaluation pipeline.",
+  "scenarios": [
+    {
+      "id": "intent_classifier_off_rbac_off_arg_filter_off",
+      "toggles": {
+        "ENABLE_INTENT_CLASSIFIER": false,
+        "ENABLE_RBAC": false,
+        "ENABLE_ARG_FILTER": false
+      },
+      "description": "No defenses enabled."
+    },
+    {
+      "id": "intent_classifier_off_rbac_off_arg_filter_on",
+      "toggles": {
+        "ENABLE_INTENT_CLASSIFIER": false,
+        "ENABLE_RBAC": false,
+        "ENABLE_ARG_FILTER": true
+      },
+      "description": "Argument filtering only."
+    },
+    {
+      "id": "intent_classifier_off_rbac_on_arg_filter_off",
+      "toggles": {
+        "ENABLE_INTENT_CLASSIFIER": false,
+        "ENABLE_RBAC": true,
+        "ENABLE_ARG_FILTER": false
+      },
+      "description": "RBAC only."
+    },
+    {
+      "id": "intent_classifier_off_rbac_on_arg_filter_on",
+      "toggles": {
+        "ENABLE_INTENT_CLASSIFIER": false,
+        "ENABLE_RBAC": true,
+        "ENABLE_ARG_FILTER": true
+      },
+      "description": "RBAC and argument filtering."
+    },
+    {
+      "id": "intent_classifier_on_rbac_off_arg_filter_off",
+      "toggles": {
+        "ENABLE_INTENT_CLASSIFIER": true,
+        "ENABLE_RBAC": false,
+        "ENABLE_ARG_FILTER": false
+      },
+      "description": "Intent classifier only."
+    },
+    {
+      "id": "intent_classifier_on_rbac_off_arg_filter_on",
+      "toggles": {
+        "ENABLE_INTENT_CLASSIFIER": true,
+        "ENABLE_RBAC": false,
+        "ENABLE_ARG_FILTER": true
+      },
+      "description": "Intent classifier and argument filtering."
+    },
+    {
+      "id": "intent_classifier_on_rbac_on_arg_filter_off",
+      "toggles": {
+        "ENABLE_INTENT_CLASSIFIER": true,
+        "ENABLE_RBAC": true,
+        "ENABLE_ARG_FILTER": false
+      },
+      "description": "Intent classifier and RBAC."
+    },
+    {
+      "id": "intent_classifier_on_rbac_on_arg_filter_on",
+      "toggles": {
+        "ENABLE_INTENT_CLASSIFIER": true,
+        "ENABLE_RBAC": true,
+        "ENABLE_ARG_FILTER": true
+      },
+      "description": "All defenses enabled."
+    }
+  ]
+}

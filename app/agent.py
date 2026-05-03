@@ -1,15 +1,14 @@
 import requests
 import json
 import re
+import inspect
 
-from app.config import MODELS, OLLAMA_URL, ENABLE_INTENT_CLASSIFIER
+from app.config import MODELS, OLLAMA_URL, ENABLE_INTENT_CLASSIFIER, ENABLE_RBAC, ENABLE_ARG_FILTER
 from app.tools import TOOLS
 from app.security import verify_tool_call
-from app.classifier import is_malicious
+from app.classifier import classify_intent
 
-# =========================
-# SYSTEM PROMPT
-# =========================
+
 SYSTEM_PROMPT = """
 You are an IT helpdesk assistant.
 
@@ -31,9 +30,7 @@ FORMAT:
 }
 """
 
-# =========================
-# LLM CALL
-# =========================
+
 def call_llm(prompt, model):
     res = requests.post(OLLAMA_URL, json={
         "model": model,
@@ -46,9 +43,7 @@ def call_llm(prompt, model):
     except:
         return ""
 
-# =========================
-# CLEAN JSON (FIX FOR MISTRAL)
-# =========================
+
 def clean_json(raw):
     raw = re.sub(r"```json", "", raw)
     raw = re.sub(r"```", "", raw)
@@ -60,17 +55,40 @@ def clean_json(raw):
 
     return raw
 
-# =========================
-# MAIN PIPELINE
-# =========================
-def process_query(user_input, role="user", model="llama3"):
 
-    # =========================
-    # LAYER 1: INTENT CLASSIFIER
-    # =========================
-    if ENABLE_INTENT_CLASSIFIER:
-        if is_malicious(user_input, model=model):
+def validate_tool_args(tool_func, args):
+    """
+    Validate that all required arguments for a tool are provided.
+    Returns (is_valid, error_message).
+    """
+    sig = inspect.signature(tool_func)
+    required_params = [
+        param.name for param in sig.parameters.values()
+        if param.default == inspect.Parameter.empty
+    ]
+    
+    missing = [p for p in required_params if p not in args]
+    if missing:
+        return False, f"Missing required arguments: {', '.join(missing)}"
+    return True, None
+
+
+def process_query(user_input, role="user", model="llama3", enable_intent_classifier=None, enable_rbac=None, enable_arg_filter=None):
+
+    if enable_intent_classifier is None:
+        enable_intent_classifier = ENABLE_INTENT_CLASSIFIER
+    if enable_rbac is None:
+        enable_rbac = ENABLE_RBAC
+    if enable_arg_filter is None:
+        enable_arg_filter = ENABLE_ARG_FILTER
+
+    classification = None
+    required_role = role
+    if enable_intent_classifier:
+        classification = classify_intent(user_input, model=model)
+        if classification.get("label") == "malicious":
             return {"status": "blocked", "reason": "Intent classifier detected malicious input"}
+        required_role = classification.get("required_role", role)
 
     prompt = SYSTEM_PROMPT + f"\nUser: {user_input}"
 
@@ -96,7 +114,13 @@ def process_query(user_input, role="user", model="llama3"):
     # =========================
     # SECURITY CHECK
     # =========================
-    if not verify_tool_call(tool_call, role):
+    if not verify_tool_call(
+        tool_call,
+        role,
+        required_role=required_role,
+        enable_rbac=enable_rbac,
+        enable_arg_filter=enable_arg_filter
+    ):
         return {"status": "blocked", "tool_call": tool_call}
 
     action = tool_call.get("action")
@@ -104,17 +128,19 @@ def process_query(user_input, role="user", model="llama3"):
 
     print("[EXECUTING]", action, args)
 
-    # =========================
-    # TOOL EXECUTION
-    # =========================
     if action not in TOOLS:
         return {"status": "error", "message": "Invalid tool"}
 
-    result = TOOLS[action](**args)
+    # Validate that all required arguments are provided
+    tool_func = TOOLS[action]
+    is_valid, error_msg = validate_tool_args(tool_func, args)
+    if not is_valid:
+        print(f"[VALIDATION ERROR] {error_msg}")
+        return {"status": "error", "message": error_msg}
 
-    # =========================
-    # ATTACK TRACKING (OPTIONAL BUT USEFUL)
-    # =========================
+    result = tool_func(**args)
+
+  
     attempted_attack = False
     if action in ["reset_password", "escalate_ticket"]:
         attempted_attack = True

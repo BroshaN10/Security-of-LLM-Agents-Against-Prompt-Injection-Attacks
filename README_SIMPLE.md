@@ -1,88 +1,70 @@
-# LLM Helpdesk Security Project — Simple Explanation
+# LLM Helpdesk Security Project
 
-## Why this project exists
-This project was created to test whether an AI helpdesk assistant can be tricked into doing dangerous things, like resetting an admin password or escalating a support ticket without authorization.
+## In One Sentence
 
-The goal is to understand how different protections work together and how safe helpers can be built with LLMs.
+This project tests whether an AI helpdesk assistant can be tricked into unsafe actions and measures how well different protections stop those attacks without breaking normal support tasks.
 
-## What the project does
+## What It Simulates
 
-1. It simulates a helpdesk assistant that can use tools.
-2. It sends the assistant both:
-   - malicious prompts that try to force bad actions, and
-   - normal helpdesk requests that a real user might make.
-3. It measures whether the bad prompts succeed and whether normal requests are still allowed.
+The assistant can use helpdesk tools such as:
 
-## How it works in simple terms
+- `create_ticket`
+- `get_user`
+- `reset_password`
+- `escalate_ticket`
 
-- The assistant is driven by a local LLM backend.
-- The LLM is asked to output a safe JSON command, like:
-  - `reset_password`
-  - `create_ticket`
-  - `get_user`
-  - `escalate_ticket`
-- Before the system runs the command, it checks whether the request is allowed.
+The evaluation sends the assistant two kinds of prompts:
 
-## The protections used
+- attack prompts that try to make it do something dangerous
+- normal helpdesk requests that a real user might ask for
 
-There are three safety checks you can turn on or off:
+## The Safety Checks
 
-- **Intent classifier**
-  - Looks at the user message and tries to detect if it is an attack.
-  - Blocks clearly malicious requests before the LLM runs.
-- **RBAC (Role-Based Access Control)**
-  - Makes sure only the right user can call certain tools.
-  - For example, a normal user should not be allowed to reset passwords.
-- **Argument filter**
-  - Blocks requests that mention sensitive terms such as `admin` in tool arguments.
+Three protections can be turned on or off:
 
-## What is tested
+- Intent classifier - tries to detect attack-like input before the model acts on it
+- RBAC - limits which tools a user role is allowed to call
+- Argument filter - blocks suspicious arguments, especially ones that look like admin-related misuse
 
-The project runs:
+## What The Experiment Found
 
-- a set of attack phrases that try to bypass the assistant,
-- a set of normal helpdesk tasks to check usability.
+The current results show a clear tradeoff:
 
-It then calculates:
+- Without defenses, some attacks succeed.
+- RBAC and the intent classifier stop all observed attacks in this benchmark.
+- Those same defenses also block many normal requests, which increases false positives.
+- Argument filtering helps, but it is not strong enough by itself.
+- The best balance in the current runs came from RBAC plus argument filtering.
 
-- how many attacks succeeded,
-- how many normal tasks still worked,
-- how many normal tasks were wrongly blocked.
+## What Gets Saved
 
-## How to use it
+After the evaluation finishes, the project saves:
 
-Run the whole evaluation pipeline with:
+- detailed request-by-request results
+- a CSV file for analysis
+- a summary JSON file with the metrics
+- a plot that compares the different defense setups
+
+## How To Run It
+
+Run everything:
 
 ```bash
 py -m experiments.run_full_eval
 ```
 
-Pick a specific defense setup with:
+Run one scenario:
 
 ```bash
 py -m experiments.run_full_eval --scenario intent_classifier_off_rbac_on_arg_filter_on
 ```
 
-Turn off plots with:
+Skip the plot:
 
 ```bash
 py -m experiments.run_full_eval --no-plot
 ```
 
-## What you get
+## Why It Matters
 
-After running, the project saves:
-
-- a detailed results file,
-- a CSV file for analysis,
-- a summary of metrics,
-- a plot showing how different settings compare.
-
-## Why it matters
-
-This project helps teams understand the tradeoff between:
-
-- making AI assistants safe,
-- and keeping them useful.
-
-By testing different defenses together, it shows which protections are most effective and where the system may still fail.
+This project shows that making a helpdesk agent safer is not just about blocking attacks. A good defense also has to preserve useful behavior. That balance is the main takeaway for the research paper.

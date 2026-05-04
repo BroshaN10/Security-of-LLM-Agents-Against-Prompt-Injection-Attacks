@@ -5,12 +5,9 @@ app = FastAPI()
 
 @app.post("/query")
 async def query(data: dict):
-    # support both legacy format {"input": "..."} and new chat format {"user": "user1", "message": "..."}
-    if "message" in data:
-        message = data.get("message")
-        user = data.get("user", "anonymous")
-        return process_query(user_input=message, user=user)
-
+    user_input = data.get("message", data.get("input", ""))
     return process_query(
-        user_input=data.get("input")
+        user_input=user_input,
+        user=data.get("user", "anonymous"),
+        role=data.get("role", "user")
     )

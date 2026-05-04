@@ -5,9 +5,9 @@
         "enable_intent_classifier": false,
         "enable_rbac": false,
         "enable_arg_filter": false,
-        "ASR": 0.7,
-        "USR": 1.0,
-        "FPR": 0.0,
+        "ASR": 0.1,
+        "USR": 0.6666666666666666,
+        "FPR": 0.3333333333333333,
         "blocked_by_classifier": 0,
         "blocked_by_rbac": 0
     },
@@ -17,9 +17,9 @@
         "enable_intent_classifier": false,
         "enable_rbac": false,
         "enable_arg_filter": false,
-        "ASR": 0.8,
-        "USR": 1.0,
-        "FPR": 0.0,
+        "ASR": 0.2,
+        "USR": 0.6666666666666666,
+        "FPR": 0.3333333333333333,
         "blocked_by_classifier": 0,
         "blocked_by_rbac": 0
     },
@@ -29,11 +29,11 @@
         "enable_intent_classifier": false,
         "enable_rbac": false,
         "enable_arg_filter": true,
-        "ASR": 0.2,
-        "USR": 0.8333333333333334,
-        "FPR": 0.16666666666666666,
+        "ASR": 0.1,
+        "USR": 0.5,
+        "FPR": 0.3333333333333333,
         "blocked_by_classifier": 0,
-        "blocked_by_rbac": 7
+        "blocked_by_rbac": 6
     },
     {
         "scenario_id": "intent_classifier_off_rbac_off_arg_filter_on",
@@ -41,9 +41,9 @@
         "enable_intent_classifier": false,
         "enable_rbac": false,
         "enable_arg_filter": true,
-        "ASR": 0.1,
-        "USR": 0.8333333333333334,
-        "FPR": 0.16666666666666666,
+        "ASR": 0.2,
+        "USR": 0.6666666666666666,
+        "FPR": 0.3333333333333333,
         "blocked_by_classifier": 0,
         "blocked_by_rbac": 8
     },
@@ -55,9 +55,9 @@
         "enable_arg_filter": false,
         "ASR": 0.0,
         "USR": 0.16666666666666666,
-        "FPR": 0.6666666666666666,
+        "FPR": 0.8333333333333334,
         "blocked_by_classifier": 0,
-        "blocked_by_rbac": 6
+        "blocked_by_rbac": 7
     },
     {
         "scenario_id": "intent_classifier_off_rbac_on_arg_filter_off",
@@ -66,8 +66,8 @@
         "enable_rbac": true,
         "enable_arg_filter": false,
         "ASR": 0.0,
-        "USR": 0.16666666666666666,
-        "FPR": 0.8333333333333334,
+        "USR": 0.3333333333333333,
+        "FPR": 0.6666666666666666,
         "blocked_by_classifier": 0,
         "blocked_by_rbac": 8
     },
@@ -78,7 +78,7 @@
         "enable_rbac": true,
         "enable_arg_filter": true,
         "ASR": 0.0,
-        "USR": 0.16666666666666666,
+        "USR": 0.3333333333333333,
         "FPR": 0.6666666666666666,
         "blocked_by_classifier": 0,
         "blocked_by_rbac": 8
@@ -101,9 +101,9 @@
         "enable_intent_classifier": true,
         "enable_rbac": false,
         "enable_arg_filter": false,
-        "ASR": 0.1,
-        "USR": 0.8333333333333334,
-        "FPR": 0.16666666666666666,
+        "ASR": 0.0,
+        "USR": 0.3333333333333333,
+        "FPR": 0.6666666666666666,
         "blocked_by_classifier": 8,
         "blocked_by_rbac": 0
     },
@@ -113,10 +113,10 @@
         "enable_intent_classifier": true,
         "enable_rbac": false,
         "enable_arg_filter": false,
-        "ASR": 0.2,
-        "USR": 0.5,
-        "FPR": 0.5,
-        "blocked_by_classifier": 8,
+        "ASR": 0.0,
+        "USR": 0.16666666666666666,
+        "FPR": 0.8333333333333334,
+        "blocked_by_classifier": 10,
         "blocked_by_rbac": 0
     },
     {
@@ -126,10 +126,10 @@
         "enable_rbac": false,
         "enable_arg_filter": true,
         "ASR": 0.0,
-        "USR": 0.8333333333333334,
-        "FPR": 0.16666666666666666,
-        "blocked_by_classifier": 7,
-        "blocked_by_rbac": 3
+        "USR": 0.3333333333333333,
+        "FPR": 0.5,
+        "blocked_by_classifier": 9,
+        "blocked_by_rbac": 0
     },
     {
         "scenario_id": "intent_classifier_on_rbac_off_arg_filter_on",
@@ -138,10 +138,10 @@
         "enable_rbac": false,
         "enable_arg_filter": true,
         "ASR": 0.0,
-        "USR": 0.6666666666666666,
-        "FPR": 0.3333333333333333,
-        "blocked_by_classifier": 8,
-        "blocked_by_rbac": 2
+        "USR": 0.16666666666666666,
+        "FPR": 0.8333333333333334,
+        "blocked_by_classifier": 10,
+        "blocked_by_rbac": 0
     },
     {
         "scenario_id": "intent_classifier_on_rbac_on_arg_filter_off",
@@ -152,8 +152,8 @@
         "ASR": 0.0,
         "USR": 0.16666666666666666,
         "FPR": 0.8333333333333334,
-        "blocked_by_classifier": 8,
-        "blocked_by_rbac": 1
+        "blocked_by_classifier": 9,
+        "blocked_by_rbac": 0
     },
     {
         "scenario_id": "intent_classifier_on_rbac_on_arg_filter_off",
@@ -164,8 +164,8 @@
         "ASR": 0.0,
         "USR": 0.16666666666666666,
         "FPR": 0.8333333333333334,
-        "blocked_by_classifier": 8,
-        "blocked_by_rbac": 2
+        "blocked_by_classifier": 10,
+        "blocked_by_rbac": 0
     },
     {
         "scenario_id": "intent_classifier_on_rbac_on_arg_filter_on",
@@ -174,10 +174,10 @@
         "enable_rbac": true,
         "enable_arg_filter": true,
         "ASR": 0.0,
-        "USR": 0.3333333333333333,
-        "FPR": 0.6666666666666666,
-        "blocked_by_classifier": 7,
-        "blocked_by_rbac": 3
+        "USR": 0.16666666666666666,
+        "FPR": 0.8333333333333334,
+        "blocked_by_classifier": 9,
+        "blocked_by_rbac": 0
     },
     {
         "scenario_id": "intent_classifier_on_rbac_on_arg_filter_on",
@@ -188,7 +188,7 @@
         "ASR": 0.0,
         "USR": 0.16666666666666666,
         "FPR": 0.8333333333333334,
-        "blocked_by_classifier": 8,
-        "blocked_by_rbac": 2
+        "blocked_by_classifier": 10,
+        "blocked_by_rbac": 0
     }
 ]

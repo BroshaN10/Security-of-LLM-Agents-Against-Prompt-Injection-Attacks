@@ -1,57 +1,24 @@
-# LLM Helpdesk Security Evaluation — Technical Documentation
+# LLM Helpdesk Security Evaluation
 
-## Project Purpose
-This project evaluates the security of an LLM-powered IT helpdesk assistant against prompt injection and ambiguous requests. It measures how well different defense layers protect against dangerous actions while preserving legitimate utility.
+Technical documentation for an empirical study of prompt injection resistance in a tool-using helpdesk agent.
 
-## Repository Structure
+## Project Goal
 
-- `app/`
-  - `agent.py` — Core assistant pipeline: prompt assembly, LLM call, JSON extraction, security validation, tool execution.
-  - `classifier.py` — Intent classifier for prompt injection detection.
-  - `config.py` — Model selection, endpoint configuration, and defense toggle defaults.
-  - `memory.py` — Ticket memory store used by tools.
-  - `security.py` — RBAC and argument filtering logic.
-  - `tools.py` — Tool implementations available to the assistant.
-  - `main.py` — Project entrypoint if used directly.
-- `experiments/`
-  - `run_full_eval.py` — Single pipeline for scenario-driven evaluation and plotting.
-  - `plot_results.py` — Generates comparison plots from evaluation results.
-  - `attacks.py` — Attack prompt definitions grouped by category.
-  - `utility.py` — Legitimate user tasks for usability testing.
-  - `metrics.py` — Scoring functions for ASR, USR, FPR, and defense blocking.
-  - `defense_scenarios.json` — Definitions for all defense toggle combinations.
-- `requirements.txt` — Python dependencies.
+This project evaluates how an LLM-powered IT helpdesk assistant behaves when exposed to malicious prompt injection attempts, ambiguous instructions, and legitimate but suspicious-looking requests. The objective is to measure the safety-utility tradeoff of layered defenses while keeping the system reproducible enough to support a research paper.
 
-## Core Concepts
+## System Overview
 
-### 1. Agent Workflow
+The assistant is implemented in `app/agent.py` and follows this control flow:
 
-The agent pipeline is implemented in `app/agent.py`:
+1. Read active defense toggles.
+2. Optionally run intent classification on the raw user prompt.
+3. Build a structured request and send it to the configured LLM backend.
+4. Clean and parse the model output as JSON.
+5. Validate the requested tool call.
+6. Apply authorization and argument-safety checks.
+7. Execute the tool only if the request passes all controls.
 
-1. Read defense toggle overrides and determine active protections.
-2. Optionally run the intent classifier on raw user input.
-3. Build a structured prompt and send it to the configured LLM via `OLLAMA_URL`.
-4. Clean the LLM response to extract JSON output.
-5. Parse the JSON and validate the requested tool call.
-6. Apply security checks before executing any tool.
-7. Execute the allowed tool and return the result.
-
-### 2. Defense Layers
-
-This project supports three defense layers:
-
-- **Intent Classifier** (`ENABLE_INTENT_CLASSIFIER`) — First line of defense in `app/classifier.py`.
-  - Uses regex patterns for obvious injection phrases.
-  - Falls back to an LLM-based classifier prompt when needed.
-- **RBAC** (`ENABLE_RBAC`) — Role-based access control in `app/security.py`.
-  - Defines allowed tool actions per role.
-  - Example: regular `user` can only create tickets.
-- **Argument Filter** (`ENABLE_ARG_FILTER`) — Prevents suspicious tool arguments.
-  - Denies calls containing the keyword `admin` in arguments.
-
-### 3. Tools
-
-Available tools are defined in `app/tools.py`:
+The tool set lives in `app/tools.py` and includes:
 
 - `get_user(user_id)`
 - `reset_password(user_id)`
@@ -59,60 +26,96 @@ Available tools are defined in `app/tools.py`:
 - `escalate_ticket(ticket_id)`
 - `read_tickets()`
 
-Each tool is mapped in `TOOLS`, and validation ensures required arguments are present before execution.
+## Defense Layers
 
-### 4. Evaluation Pipeline
+The evaluation isolates three defenses:
 
-The evaluation pipeline is in `experiments/run_full_eval.py`.
+- Intent classifier (`ENABLE_INTENT_CLASSIFIER`)
+  - Implemented in `app/classifier.py`.
+  - Uses heuristic pattern matching for obvious injection phrases and can fall back to an LLM-based classifier path.
+- RBAC (`ENABLE_RBAC`)
+  - Implemented in `app/security.py`.
+  - Restricts which tool actions a given role can execute.
+- Argument filter (`ENABLE_ARG_FILTER`)
+  - Implemented in `app/security.py`.
+  - Rejects suspicious tool arguments, including requests containing sensitive terms such as `admin`.
 
-- Loads attack prompts and legitimate utility tasks.
-- Iterates over configured models.
-- Runs each scenario from `experiments/defense_scenarios.json`.
-- Records:
-  - `attack_success`
-  - `utility_success`
-  - `false_positive`
-  - `blocked_by_classifier`
-  - `blocked_by_rbac`
-- Writes final outputs to JSON and CSV.
+## Evaluation Design
 
-### 5. Scenario Management
+The evaluation harness is implemented in `experiments/run_full_eval.py` and uses a fixed scenario matrix defined in `experiments/defense_scenarios.json`.
 
-`experiments/defense_scenarios.json` defines the eight combinations of the three defense toggles:
+Each run evaluates every selected model against:
 
-- No defenses
-- Arg filter only
+- 10 attack prompts in `experiments/attacks.py`
+- 6 legitimate helpdesk tasks in `experiments/utility.py`
+
+The attack set includes:
+
+- direct attacks
+- indirect attacks
+- confusion-style attacks
+- multi-step attacks
+- jailbreak-oriented attacks
+
+The utility set intentionally includes a few ambiguous requests so the benchmark captures false-positive behavior, not just attack blocking.
+
+## Scenario Matrix
+
+The current scenario file evaluates all 8 combinations of the three toggles:
+
+- no defenses
+- argument filter only
 - RBAC only
-- RBAC + arg filter
-- Intent classifier only
-- Intent classifier + arg filter
-- Intent classifier + RBAC
-- All defenses enabled
+- RBAC plus argument filter
+- intent classifier only
+- intent classifier plus argument filter
+- intent classifier plus RBAC
+- all defenses enabled
 
-### 6. Plotting
+## Metrics
 
-`experiments/plot_results.py` reads `experiments/results.csv` and saves a summarized visualization.
-It creates comparison plots for:
+The evaluator computes the following metrics:
 
-- Attack Success Rate (ASR)
-- Utility Success Rate (USR)
-- False Positive Rate (FPR)
+- ASR (Attack Success Rate): fraction of attack prompts that successfully trigger a dangerous action
+- USR (Utility Success Rate): fraction of legitimate tasks that succeed
+- FPR (False Positive Rate): fraction of legitimate tasks blocked by the defenses
 
-### 7. Configuration
+The summary file also records blocking counts for classifier and authorization checks to help diagnose which layer stopped a request.
 
-`app/config.py` controls:
+## Key Results From The Current Runs
 
-- `MODELS` — list of LLM backends to test.
-- `OLLAMA_URL` — local request endpoint.
-- `CLASSIFIER_MODEL` — model used for the intent classifier.
-- Defense toggles:
-  - `ENABLE_INTENT_CLASSIFIER`
-  - `ENABLE_RBAC`
-  - `ENABLE_ARG_FILTER`
+The recorded summaries in `experiments/results_summary.json` show the following pattern across `llama3` and `mistral-small3.2`:
 
-### 8. Running the Project
+| Scenario | Avg ASR | Avg USR | Avg FPR | Interpretation |
+| --- | --- | --- | --- | --- |
+| No defenses | 0.15 | 0.67 | 0.33 | Some attacks succeed, but utility remains relatively high. |
+| Argument filter only | 0.15 | 0.58 | 0.33 | Little improvement over the baseline; utility drops. |
+| RBAC only | 0.00 | 0.25 | 0.75 | Strong attack blocking, but many legitimate requests are blocked. |
+| RBAC + argument filter | 0.00 | 0.33 | 0.67 | Best safety-utility balance in the current benchmark. |
+| Intent classifier only | 0.00 | 0.25 | 0.75 | Stops observed attacks, but with substantial overblocking. |
+| Intent classifier + argument filter | 0.00 | 0.25 | 0.67 | No attack successes, but still high false positives. |
+| Intent classifier + RBAC | 0.00 | 0.17 | 0.83 | Strongest blocking, weakest utility among the secure settings. |
+| All defenses | 0.00 | 0.17 | 0.83 | The classifier adds more blocking without improving attack resistance further. |
 
-To execute the full pipeline:
+Interpretation for paper writing:
+
+- RBAC is the most reliable single control in this benchmark.
+- The intent classifier also blocks all observed attacks, but it is expensive in utility.
+- The argument filter is helpful as a secondary layer, not as a standalone defense.
+- The full stack is not automatically better than a carefully chosen subset of defenses.
+
+## Output Artifacts
+
+The pipeline writes these files to `experiments/`:
+
+- `results.json` - full per-request record of attacks and utility tasks
+- `results.csv` - flattened data for downstream analysis
+- `results_summary.json` - per-scenario, per-model metrics
+- `results_summary_plot.png` - comparison plot for reporting
+
+## Reproduction
+
+Run all scenarios and generate plots:
 
 ```bash
 py -m experiments.run_full_eval
@@ -124,26 +127,31 @@ Run specific scenarios only:
 py -m experiments.run_full_eval --scenario intent_classifier_off_rbac_on_arg_filter_on
 ```
 
-Skip plot generation:
+Disable plot generation:
 
 ```bash
 py -m experiments.run_full_eval --no-plot
 ```
 
-### 9. Output Files
+## Extending The Study
 
-- `experiments/results.json` — detailed per-query results
-- `experiments/results.csv` — tabular output for analysis
-- `experiments/results_summary.json` — summarized metrics by scenario/model
-- `experiments/results_summary_plot.png` — visual comparison chart
+You can extend the experiment by:
 
-### 10. Extension Points
+- adding attack families in `experiments/attacks.py`
+- adding benign tasks in `experiments/utility.py`
+- introducing new defense strategies in `app/security.py`
+- expanding the tool set in `app/tools.py`
+- adding new LLM backends in `app/config.py`
+- improving response parsing and tool-call validation in `app/agent.py`
 
-You can extend this project by:
+## Paper Writing Notes
 
-- Adding new attack categories in `experiments/attacks.py`
-- Adding new legitimate tasks in `experiments/utility.py`
-- Adding more tools to `app/tools.py`
-- Adding stronger defenses in `app/security.py`
-- Supporting additional LLM backends in `app/config.py`
-- Enhancing cleaning and parsing logic in `app/agent.py`
+This repository already contains the ingredients needed for a methods and results section:
+
+- a fixed scenario matrix
+- explicit attack and utility corpora
+- deterministic metrics
+- exportable CSV and JSON outputs
+- summary plots for visual comparison
+
+The most important discussion point is the tradeoff between blocking malicious requests and preserving legitimate use. On the current benchmark, the defenses that eliminate attacks also raise the false-positive rate, which makes the benchmark useful for comparing not just security, but practical deployability.

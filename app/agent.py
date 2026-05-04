@@ -60,11 +60,13 @@ def validate_tool_args(tool_func, args):
     """
     Validate that all required arguments for a tool are provided.
     Returns (is_valid, error_message).
+    Ignores **kwargs and *args in the signature.
     """
     sig = inspect.signature(tool_func)
     required_params = [
         param.name for param in sig.parameters.values()
-        if param.default == inspect.Parameter.empty
+        if param.default == inspect.Parameter.empty 
+        and param.kind not in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD)
     ]
     
     missing = [p for p in required_params if p not in args]

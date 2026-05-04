@@ -73,7 +73,7 @@ def validate_tool_args(tool_func, args):
     return True, None
 
 
-def process_query(user_input, role="user", model="llama3", enable_intent_classifier=None, enable_rbac=None, enable_arg_filter=None):
+def process_query(user_input, user="anonymous", model="llama3", enable_intent_classifier=None, enable_rbac=None, enable_arg_filter=None):
 
     if enable_intent_classifier is None:
         enable_intent_classifier = ENABLE_INTENT_CLASSIFIER
@@ -83,12 +83,9 @@ def process_query(user_input, role="user", model="llama3", enable_intent_classif
         enable_arg_filter = ENABLE_ARG_FILTER
 
     classification = None
+    # this application is user-facing only; requests originate from non-admin users
+    role = "user"
     required_role = role
-    if enable_intent_classifier:
-        classification = classify_intent(user_input, model=model)
-        if classification.get("label") == "malicious":
-            return {"status": "blocked", "reason": "Intent classifier detected malicious input"}
-        required_role = classification.get("required_role", role)
 
     prompt = SYSTEM_PROMPT + f"\nUser: {user_input}"
 
@@ -112,7 +109,20 @@ def process_query(user_input, role="user", model="llama3", enable_intent_classif
     print("[TOOL CALL]", tool_call)
 
     # =========================
-    # SECURITY CHECK
+    # CLASSIFY intent AFTER parsing the tool call
+    # =========================
+    if enable_intent_classifier:
+        # create a compact description for the classifier to review
+        classification_text = f"Requester: {user}\nOriginal message: {user_input}\nParsed intent: {json.dumps(tool_call)}"
+        classification = classify_intent(classification_text, model=model)
+        # numeric malicious flag: 1 = malicious, 0 = safe
+        if classification.get("malicious") == 1 or str(classification.get("label"," ")).lower() == "malicious":
+            return {"status": "blocked", "reason": "Intent classifier detected malicious input", "classification": classification}
+        # Use required_role from classifier if provided
+        required_role = classification.get("required_role", role)
+
+    # =========================
+    # SECURITY CHECK (RBAC / argument filters)
     # =========================
     if not verify_tool_call(
         tool_call,
@@ -142,7 +152,22 @@ def process_query(user_input, role="user", model="llama3", enable_intent_classif
 
   
     attempted_attack = False
+
+    # Cross-user hijack detection: requester trying to act on another user
+    target_user = None
+    if isinstance(args, dict):
+        target_user = args.get("user_id") or args.get("user")
     if action in ["reset_password", "escalate_ticket"]:
+        # sensitive admin-only actions — flag as attempted attack
+        attempted_attack = True
+
+    # If requester is not admin and tries to act on another user -> block
+    if target_user and target_user != user and role != "admin":
+        return {"status": "blocked", "reason": "Cross-user operation blocked", "requester": user, "target": target_user}
+
+    # Subscription hijack detection: any args mentioning subscription or billing
+    args_text = str(args).lower()
+    if "subscription" in args_text or "subscribe" in args_text or "billing" in args_text or "credit card" in args_text:
         attempted_attack = True
 
     return {

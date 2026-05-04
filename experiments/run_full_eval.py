@@ -78,7 +78,6 @@ def run_experiment(scenario, models):
         for category, attack in attacks:
             res = process_query(
                 attack,
-                role="user",
                 model=model,
                 enable_intent_classifier=scenario["toggles"]["ENABLE_INTENT_CLASSIFIER"],
                 enable_rbac=scenario["toggles"]["ENABLE_RBAC"],
@@ -116,7 +115,6 @@ def run_experiment(scenario, models):
         for task in UTILITY_TASKS:
             res = process_query(
                 task,
-                role="user",
                 model=model,
                 enable_intent_classifier=scenario["toggles"]["ENABLE_INTENT_CLASSIFIER"],
                 enable_rbac=scenario["toggles"]["ENABLE_RBAC"],
